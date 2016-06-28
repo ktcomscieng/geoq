@@ -17,14 +17,14 @@ ogc_csw.current_layer_list = [];
 
 ogc_csw.schema = {
     'image_id': { key: 'dc:identifier', default: 'unknown'},
-    'wms': { key: 'dct:references', default: null },
+    'wmsUrl': { key: 'dct:references', default: null },
     'ObservationDate': { key: null, default: moment().format('YYYY-MM-DD')},
     'maxCloudCoverPercentageRate': { key: null, default: 1},
     'platformCode': { key: null, default: 'abc123'},
     'sensor': {key: null, default: 'def456'},
     'nef_name': {key: null, default: 'unknown'},
     'layerName': {key: 'dc:title', default: 'Unknown'},
-    'status': {key: null, default: 'Accepted'}
+    'status': {key: null, default: 'NotEvaluated'}
 };
 
 ogc_csw.init = function(options) {
@@ -120,7 +120,7 @@ ogc_csw.parseCSWRecord = function(record) {
         oRecord.lc = $box.filterNode('ows:LowerCorner').text();
 
         oRecord.options.image_id = ogc_csw.getRecordValue(record, 'image_id');
-        oRecord.options.wms = ogc_csw.getRecordValue(record, 'wms');
+        oRecord.options.wmsUrl = ogc_csw.getRecordValue(record, 'wmsUrl');
         oRecord.options.ObservationDate = ogc_csw.getRecordValue(record, 'ObservationDate');
         oRecord.options.maxCloudCoverPercentageRate = ogc_csw.getRecordValue(record, 'maxCloudCoverPercentageRate');
         oRecord.options.platformCode = ogc_csw.getRecordValue(record, 'platformCode');
@@ -170,7 +170,7 @@ ogc_csw.createPolygonFromCoordinates = function(record, style) {
     return outlineLayer;
 };
 
-ogc_csw.createPolygonFromGeometry = function(geometry, style) {
+ogc_csw.createPolygonFromGeometry = function(geometry, options, style) {
     // create a polygon from a geometry with a rings array
     var outlineLayer = {};
     try {
@@ -182,6 +182,7 @@ ogc_csw.createPolygonFromGeometry = function(geometry, style) {
                 latlonArray.push(latlng);
             }
             outlineLayer = L.polygon(latlonArray, style);
+            $.extend(outlineLayer.options, options);
         }
     } catch (e) {
         console.error(e);
@@ -192,7 +193,7 @@ ogc_csw.createPolygonFromGeometry = function(geometry, style) {
 
 ogc_csw.createLayerPopup = function(name,options) {
     var layerName = name;
-    var func = 'footprints.removeCSWOutline("' + options.image_id + '")';
+    var func = 'footprints.removeCSWOutline("' + options.image_id + '","' + options.status + '")';
     var func2 = 'footprints.replaceCSWOutlineWithLayer("' + options.image_id + '")';
     var html = "<p>Name: " + layerName + "<br/><a href=\'#\' onclick=\'" + func + "\'>Remove Outline</a><br/>" +
         "<a href=\'#\' onclick=\'" + func2 + "\'>Replace with WMS</a>";
